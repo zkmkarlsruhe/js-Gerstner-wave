@@ -1,0 +1,11 @@
+body {
+  font-family: Monospace;
+  background-color: #fff;
+  margin: 0px;
+  overflow: hidden;
+}
+
+.ui-loader, .ui-page
+{
+  display: none !important;
+}
