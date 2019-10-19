@@ -29,34 +29,6 @@ var stats = true;
 
 const TwoPi = Math.PI * 2;
 
-// class WireframeCube {
-//
-//   constructor(size=25) {
-//     this.geometry = new THREE.BoxBufferGeometry( size, size, size );
-//     this.wireframe = new THREE.EdgesGeometry( this.geometry );
-//     this.material = new THREE.LineBasicMaterial( { color: 0xffffff,	linewidth: 1 } );
-//     this.mesh = new THREE.LineSegments( this.wireframe, this.material );
-//   }
-//
-//   animate(offset) {
-//     this.rotationOffset = offset // new THREE.Vector3(0,0,0);
-//     this.rotation = new THREE.Vector3(0,0,0);
-//     this.rotation.add(this.rotationOffset);
-//     this.rotationTarget = new THREE.Vector3(0,TwoPi,0);
-//     this.rotationTarget.add(this.rotationOffset);
-//     this.mesh.userData.tween = new TWEEN.Tween(this.rotation).to(this.rotationTarget, 10000);
-//
-//     function onUpdate() {
-//       this.mesh.rotation.setFromVector3(this.rotation);
-//     }
-//
-//     this.mesh.userData.tween.onUpdate(onUpdate.bind(this));
-//     this.mesh.userData.tween.repeat(Infinity);
-//     this.mesh.userData.tween.start()
-//
-//   }
-// }
-
 function polarArray( r, count ) {
 
   let output = [];
@@ -112,12 +84,8 @@ class PointGrid {
     this.xres = 100;
     this.zres = 100;
     this.params = {
-      xc: this.xres,
-      yc: 1,
-      zc: this.zres,
-      xs: x / this.xres,
-      ys: 1,
-      zs: z / this.zres
+      xc: this.xres, yc: 1, zc: this.zres,
+      xs: x / this.xres, ys: 1, zs: z / this.zres
     };
     this.grid = XYArray( this.params );
     this.fill();
@@ -137,19 +105,15 @@ class PointGrid {
       this.group.add( cube );
     }
     return;
-
   }
-
 }
 
 function initWorld() {
-  var i = 0;
-  let x = 2500;
-  let z = 2500;
-  wave = new MultipleWaves( x, z );
-  ptGrid = new PointGrid( x, z );
+  let scale = new THREE.Vector3(2500,0,2500)
+  wave = new MultipleWaves( scale );
+  wave.example();
+  ptGrid = new PointGrid( scale.x, scale.z );
   scene.add(ptGrid.group);
-
   onRenderFcts.push( function() {
     wave.update();
     for(var particle of ptGrid.group.children) {
@@ -161,43 +125,31 @@ function initWorld() {
   return;
 }
 
-///
-
 class GUIControls {
-
   constructor() {
-
     this.gui = new dat.GUI();
-
   }
 
   textFolder( target ) {
-
     this.textCtrl = this.gui.addFolder( 'Text' );
     this.textCtrl.add( target, 'size' ).name( 'Size' );
     this.textCtrl.add( target, 'height' ).name( 'Thickness' );
     this.textCtrl.addColor( target, 'color' ).name( 'Color' );
-
   }
 
-  cameraFolder( camera ) {
-
+  cameraFolder( target ) {
     this.cameraCtrl = this.gui.addFolder( 'Camera' );
-    this.cameraCtrl.add( camera.position, 'y' ).name( 'Height' );
-    this.cameraCtrl.add( camera.rotation, 'x', - Math.PI / 4, 0 ).name( 'Pitch' );
-
+    this.cameraCtrl.add( target.position, 'y' ).name( 'Height' );
+    this.cameraCtrl.add( target.rotation, 'x', - Math.PI / 4, 0 ).name( 'Pitch' );
   }
 
-  waveFolder ( waves ) {
-
+  waveFolder ( target ) {
     this.waveCtrl = this.gui.addFolder ( 'Waves' );
-    this.waveCtrl.add( waves, 'speed', 0, 20 ).name( 'Speed' );
-    this.waveCtrl.add( waves, 'height', 0, 100 ).name( 'Height' );
-    this.waveCtrl.add( waves, 'waveLength', 10, 50).name( 'Width' );
+    this.waveCtrl.add( target, 'speed', 0, 20 ).name( 'Speed' );
+    this.waveCtrl.add( target, 'height', 0, 100 ).name( 'Height' );
+    this.waveCtrl.add( target, 'waveLength', 10, 50).name( 'Width' );
     this.waveCtrl.open();
-
   }
-
 }
 
 function initRenderer() {
@@ -205,7 +157,7 @@ function initRenderer() {
 	renderer = new THREE.WebGLRenderer({
       antialias: true,       // Performance on older mobile devices.
       precision: 'mediump',   // Performance on older mobile devices.
-      alpha: true,            // Display webcam image in background.
+      // alpha: true,            // Display webcam image in background.
       // powerPreference: "low-power", // Mobile application.
       logarithmicDepthBuffer: true
   });
@@ -215,18 +167,15 @@ function initRenderer() {
 	renderer.setSize( window.innerWidth, window.innerHeight );
 	document.body.appendChild( renderer.domElement );
   console.debug( 'OK: Initialized renderer.' );
-
 }
 
 initFcts.push( initRenderer );
 
 function initStats() {
-
   stats = new Stats();
   stats.showPanel( 0 ); // 0: fps, 1: ms, 2: mb, 3+: custom
   document.body.appendChild( stats.dom );
   console.debug( 'OK: Initialized statistics.' );
-
 }
 
 if( stats ) {
@@ -234,15 +183,6 @@ if( stats ) {
 }
 
 function initCamera() {
-
-  // camera = new THREE.OrthographicCamera(
-  //   - window.innerWidth / 2,  // Left
-  //   + window.innerWidth / 2,  // Right
-  //   + window.innerHeight / 2, // Top
-  //   - window.innerHeight / 2, // Bottom
-  //   1,                        // Near
-  //   2000                      // Far
-  // );
   camera = new THREE.PerspectiveCamera(
     45,
     window.innerWidth / window.innerHeight,
@@ -251,17 +191,14 @@ function initCamera() {
 	camera.position.set( 0, 2000, 3000 );
   camera.lookAt( new THREE.Vector3() );
   console.debug( 'OK: Initialized camera.' );
-
 }
 
 initFcts.push( initCamera );
 
 function initScene() {
-
   scene = new THREE.Scene();
   scene.add( new THREE.AmbientLight( 0xffffff ));
   console.log( 'OK: Initialized scene.' );
-
 }
 
 initFcts.push( initScene );
@@ -302,16 +239,13 @@ initFcts.push( initControls );
 initFcts.push( initWorld );
 
 function render() {
-
   renderer.render( scene, camera );
   TWEEN.update();
-
 }
 
 onRenderFcts.push( render );
 
 function onWindowResize() {
-
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
     renderer.setSize( window.innerWidth, window.innerHeight );
@@ -320,51 +254,19 @@ function onWindowResize() {
 window.addEventListener( 'resize', onWindowResize, false );
 
 
-// ----------------------------------------------------------------------
-// Helper functions
-
-function getRandomInt( min, max ) { // Maximum exclusive and minimum inclusive
-
-    min = Math.ceil( min );
-    max = Math.floor( max );
-    return Math.floor( Math.random() * ( max - min ) ) + min;
-
-}
-
-
-function getMaxOfArray( numArray ) {	// Max value inside an array
-
-	 return Math.max.apply( null, numArray );
-
-}
-
-function getMinOfArray( numArray ) {	// Min value inside an array
-
-	 return Math.min.apply( null, numArray );
-
-}
-
 function init() {
-
   console.group( 'Intitialize all the things!' );
   initFcts.forEach( function( initFct ) {
     initFct();
   });
   console.groupEnd();
-
 }
 
 function animate() {
-
-  if ( stats ) {
-    stats.begin();
-  }
+  if ( stats ) stats.begin();
   onRenderFcts.forEach( function( onRenderFct ) {
     onRenderFct();
   });
-  if ( stats ) {
-    stats.end();
-  }
+  if ( stats ) stats.end();
   requestAnimationFrame( animate ); // Animation frame
-
 }

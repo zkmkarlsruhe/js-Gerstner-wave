@@ -19,96 +19,118 @@
 // SOFTWARE.
 
 class Wave {
-
-  constructor( x, z, dir, speed=1, height=1, waveLength=1 ) {
-
-    this.version = 1;
+  constructor( scaling, direction, speed, height, lambda ) {
+    this.version = 2;
     console.groupCollapsed( 'Gernster Wave. Version:', this.version );
-    console.debug( 'Dimesions:', x, z, '(x, z)' );
-    console.debug( 'Direction:', dir + '°' )
-    console.debug( 'Parameters:', speed, height, waveLength, '(Speed, Height, Wavelength)' );
+    console.debug( 'Parameters:', speed, height, lambda, '(Speed, Height, lambda)' );
     console.groupEnd();
-
-    // x : dimension in X-axis
-    // z : dimension in Z-axis
-    // dir: direction in degrees, rotation around Y-axis
-    this.xSize = x;
-    this.zSize = z;
     this.height = height;
     this.speed = speed;
-    this.waveLength = waveLength;
-    this.direction = new THREE.Vector3( 1, 0, 0 );
-    this.direction.applyAxisAngle( new THREE.Vector3( 0, 1, 0 ), THREE.Math.DEG2RAD * dir );
+    this.lambda = lambda;
+    this.direction = direction;
+    this.scaling = scaling;
     this.t = 0;
     return;
+  }
 
+  set direction( vect ) {
+    if( vect instanceof THREE.Vector3 ){
+      this._direction = vect;
+    } else {
+      throw new Error( 'You must provide a THREE.Vector3 for direction.' );
+    }
+  }
+
+  get direction() {
+    return this._direction;
+  }
+
+  set scaling( vect ) {
+    if( vect instanceof THREE.Vector3 ){
+      this._scaling = vect;
+    } else {
+      throw new Error( 'You must provide a THREE.Vector3 for scaling.' );
+    }
+  }
+
+  get scaling() {
+    return this._scaling;
   }
 
   update( millis = 0 ) {
-
     if( millis == 0 ) millis = Date.now();
     this.t = this.speed * 0.001 * millis % ( 2 * Math.PI );
     return;
-
   }
 
-  xOffset( particle ) {
-
-    return 2 * Math.PI * ( particle.x / this.xSize ) * this.direction.x;
-
+  _xOffset( pos ) {
+    return 2 * Math.PI * ( pos.x / this.scaling.x ) * this.direction.x;
   }
 
-  zOffset( particle ) {
-
-    return 2 * Math.PI * ( particle.z / this.zSize ) * this.direction.z;
-
+  _zOffset( pos ) {
+    return 2 * Math.PI * ( pos.z / this.scaling.z ) * this.direction.z;
   }
 
-  pOffset( particle ) {
-
-    return this.waveLength * ( this.xOffset( particle ) + this.zOffset( particle ) );
-
+  _pOffset( pos ) {
+    return this.lambda * ( this._xOffset( pos ) + this._zOffset( pos ) );
   }
 
   getParticle( particle ) {
-
-    var x = this.direction.x * Math.cos( ( - this.t + this.pOffset( particle ) ) );
-    var z = this.direction.z * Math.cos( ( - this.t + this.pOffset( particle ) ) );
-    var y = Math.sin( - this.t + this.pOffset( particle ) );
-    return new THREE.Vector3( x, y, z ).multiplyScalar( this.height );
-
+    if( particle instanceof THREE.Vector3 ) {
+      var x = this.direction.x * Math.cos( this._pOffset( particle ) - this.t );
+      var z = this.direction.z * Math.cos( this._pOffset( particle ) - this.t );
+      var y = Math.sin( this._pOffset( particle ) - this.t );
+      return new THREE.Vector3( x, y, z ).multiplyScalar( this.height );
+    } else {
+      throw new Error( 'You must provide a THREE.Vector3 as particle position.' );
+    }
   }
-
 }
 
 class MultipleWaves {
-
-  constructor( x, y ) {
-
-    this.version = 1;
+  constructor( scaling ) {
+    this.version = 2;
+    this.scaling = scaling;
     console.groupCollapsed( 'Multiple Waves. Version', this.version );
     console.groupEnd();
-    this.waves = [
-      new Wave( x, y, -90, 2, 0.2, 2 ),
-      new Wave( x, y,  10, 2, 0.2, 1 ),
-      new Wave( x, y, 120, 1, 0.2, 4 ),
-    ];
+    this.waves = [];
+  }
 
+  set scaling( vect ) {
+    if( vect instanceof THREE.Vector3 ){
+      this._scaling = vect;
+    } else {
+      throw new Error( 'You must provide a THREE.Vector3 for scaling.' );
+    }
+  }
+
+  get scaling() {
+    return this._scaling;
+  }
+
+  example() {
+    this.addWave( -90, 0.2, 2, 2 );
+    this.addWave( 10,  0.2, 2, 1 );
+    this.addWave( 120, 0.3, 1, 4 );
+  }
+
+  addWave( direction=45, height=0.5, speed=2, lambda=2 ) {
+    var dir = direction;
+    if( !(direction instanceof THREE.Vector3 ) ) {
+      dir = new THREE.Vector3( 1, 0, 0 );
+      dir.applyAxisAngle( new THREE.Vector3( 0, 1, 0 ), direction * THREE.Math.DEG2RAD );
+    }
+    this.waves.push( new Wave( this.scaling, dir, speed, height, lambda ) );
   }
 
   getParticle( particle ) {
-
     var position = new THREE.Vector3();
     for( var wave of this.waves ) position.add( wave.getParticle( particle ) );
     return position;
-
   }
 
   update() { // Call this within the animation loop.
-
     var now = Date.now();
     for( var wave of this.waves ) wave.update( now );
-
   }
-
 }
